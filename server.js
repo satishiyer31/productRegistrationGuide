@@ -17,6 +17,12 @@ app.use(express.json());
 
 app.use(express.urlencoded({extended:true}));
 
+
 app.use('/api',api);
 
+app.get('/', async(req,res)=> {
+    res.send("Satish's Product Registration Custom Objects Proxy API");
+})
+
 app.listen(PORT,()=> console.log(`App Listening at http://localhost:${PORT}`));
+
