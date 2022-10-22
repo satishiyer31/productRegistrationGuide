@@ -1,14 +1,12 @@
 const prodreg = require('express').Router();
 const {LOGIN, PASSWORD, BASE_URL} = process.env;
 const fetch = require('node-fetch');
-const URL = BASE_URL + '?type=productregistration'
+
 
 prodreg.get('/:userid',async (req,res) => {
-
-    console.info(`📗 ${req.method} request to ${req.path}`)
-    console.info(URL)
-    
-    // res.json(`Get Method of Prod Reg for ${req.params.userid}`)
+    var prodRegIds="";
+   
+    const URL = BASE_URL + `/zen:user:${req.params.userid}/relationships/userid`
 
     const customObj = await fetch(URL, {
 
@@ -18,17 +16,38 @@ prodreg.get('/:userid',async (req,res) => {
         }
     });
 
-    const meetingObj = await customObj.json();
-    res.json(meetingObj);
+    var prodRegObj = await customObj.json();
+    
+    prodRegObj = prodRegObj.data
+
+    // ProdRegObj has the IDs of the Product Registration Custom Object.
+
+    //Iterate the array and extract the Individual IDs in a comma separated string
+    prodRegObj.forEach(getProdRegIds)
+
+    function getProdRegIds(record) {
+        prodRegIds += record.target +','
+    }
+
+    // console.log(prodRegIds)
+
+    const URL2 = BASE_URL+ `?ids=${prodRegIds}`
+    // console.log(URL2)
+
+    //Make second API call with the Individual Ids as the query parameter
+    const regData = await fetch(URL2, {
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Basic ' + Buffer.from(LOGIN + ':' + PASSWORD).toString('base64')
+        }
+    })
+    var prodRegData = await regData.json()
+    //ProdReg Data has the attribute information and can be returned to the client.
+    res.json(prodRegData);
 
 })
 
 prodreg.post('/newreg/:userid', async(req,res)=> {
-
-    // if (req.body && req.params.userid) {
-        // console.info(`${req.method} request received`)
-        
-        // console.info(req.body)
 
         fetch(BASE_URL, {
      
@@ -51,9 +70,11 @@ prodreg.post('/newreg/:userid', async(req,res)=> {
         // Displaying results to console
         .then(newProd => {console.info(newProd)
             
-            console.info('Prod registration ID: '+ newProd.data.id);
-            console.info('User ID '+ req.params.userid);
+            // console.info('Prod registration ID: '+ newProd.data.id);
+            // console.info('User ID '+ req.params.userid);
             
+            // Get the Newly add Custom Object's ID and the user ID that is passed in the request to make second API call
+            //The Second API call associates the new CO to the user.
             fetch('https://z3nsatishiyer.zendesk.com/api/sunshine/relationships/records', {
 
                 method: "POST",
@@ -70,9 +91,6 @@ prodreg.post('/newreg/:userid', async(req,res)=> {
 
         }
         );
-
-    // }
-
 
 })
       
